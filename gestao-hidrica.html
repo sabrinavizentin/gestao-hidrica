@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IA GOTA NEGRA v2.0</title>
+    <style>
+        body {
+            background-color: #0d0d0d;
+            color: #00ff41;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        #terminal {
+            background-color: #000;
+            width: 90%;
+            max-width: 800px;
+            height: 80vh;
+            border: 2px solid #003b00;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px #00ff41;
+            overflow-y: auto;
+            position: relative;
+        }
+        /* Efeito de scanline de monitores antigos */
+        #terminal::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 1px dashed #00ff41;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+        }
+        #output {
+            white-space: pre-wrap;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+        #input-line {
+            display: flex;
+            align-items: center;
+            display: none; /* Escondido até a IA terminar de falar */
+        }
+        #prompt { margin-right: 10px; }
+        #user-input {
+            background: transparent;
+            border: none;
+            color: #00ff41;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            outline: none;
+            width: 100%;
+        }
+        .cursor {
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+
+    <div id="terminal">
+        <div class="header">
+            <div>==================================================</div>
+            <div>SISTEMA DE GESTÃO HÍDRICA - IA 'GOTA NEGRA' v2.0</div>
+            <div>STATUS: <span style="color: red;">ALERTA CRÍTICO DE DESPERDÍCIO</span></div>
+            <div>==================================================</div>
+        </div>
+        <div id="output"></div>
+        <div id="input-line">
+            <span id="prompt">_></span>
+            <input type="text" id="user-input" autocomplete="off" autofocus>
+        </div>
+    </div>
+
+    <script>
+        const outputDiv = document.getElementById('output');
+        const inputLine = document.getElementById('input-line');
+        const userInput = document.getElementById('user-input');
+
+        let faseAtual = 0;
+        let isTyping = false;
+
+        // Efeito de digitação lenta
+        async function typeLento(texto, atraso = 30) {
+            isTyping = true;
+            inputLine.style.display = 'none';
+            for (let i = 0; i < texto.length; i++) {
+                outputDiv.innerHTML += texto.charAt(i);
+                // Rola para o final
+                document.getElementById('terminal').scrollTop = document.getElementById('terminal').scrollHeight;
+                await new Promise(r => setTimeout(r, atraso));
+            }
+            outputDiv.innerHTML += "<br>";
+            isTyping = false;
+            inputLine.style.display = 'flex';
+            userInput.value = '';
+            userInput.focus();
+        }
+
+        async function printMulti(linhas) {
+            outputDiv.innerHTML = ""; // Limpa tela
+            for (let linha of linhas) {
+                await typeLento(linha, 20);
+            }
+        }
+
+        const fases = [
+            {
+                tipo: 'intro',
+                texto: [
+                    "\n[ATENÇÃO] O limite mensal de água da escola foi ultrapassado.",
+                    "A Inteligência Artificial cortou o abastecimento por protocolo de segurança.",
+                    "Restam apenas 50 litros nas caixas d'água principais.",
+                    "Para provar que vocês são capazes de gerir recursos, resolvam os 3 protocolos de segurança.\n",
+                    "[Digite INICIAR para começar a descriptografia...]"
+                ],
+                validar: (ans) => ans.toUpperCase() === 'INICIAR',
+                erro: "[COMANDO INVÁLIDO] Digite INICIAR."
+            },
+            {
+                tipo: 'fase1',
+                texto: [
+                    ">>> PROTOCOLO 1: A ÁGUA INVISÍVEL (PEGADA HÍDRICA)",
+                    "O maior gasto de água não é o que vemos, mas o que consumimos indiretamente.",
+                    "Para produzir UMA única calça jeans, são necessários 10.000 litros de água.",
+                    "\n[ENIGMA]: Se esta turma inteira (vamos supor 30 alunos) comprar 1 calça jeans nova cada,",
+                    "qual será o volume total dessa pegada hídrica expressa em METROS CÚBICOS (m³)?",
+                    "(Dica: 1 m³ = 1.000 litros)",
+                    "\n[INSIRA O VALOR EM m³]:"
+                ],
+                validar: (ans) => ans === '300',
+                sucesso: "\n[ACESSO CONCEDIDO] Correto. 300.000 litros equivalem a 300 m³. Um volume assustador.",
+                erro: "[ERRO] Cálculo incorreto. A água continua secando. Tente novamente."
+            },
+            {
+                tipo: 'fase2',
+                texto: [
+                    ">>> PROTOCOLO 2: A MATEMÁTICA DA GOTEIRA",
+                    "Um vazamento no banheiro dos fundos enche um balde de 10 litros a cada 1 hora.",
+                    "A engenharia sugeriu instalar uma cisterna para captar água da chuva de 480 litros.",
+                    "\n[ENIGMA]: Em quantos DIAS exatos apenas esse pequeno vazamento",
+                    "desperdiçaria o equivalente à capacidade total dessa cisterna nova?",
+                    "\n[INSIRA O NÚMERO DE DIAS]:"
+                ],
+                validar: (ans) => ans === '2',
+                sucesso: "\n[ACESSO CONCEDIDO] Correto. 10L x 24h = 240L por dia. Em 2 dias, joga-se uma cisterna inteira fora.",
+                erro: (ans) => ans === '48' ? "[ERRO] Esse é o total de horas. O sistema pede a resposta em DIAS." : "[ERRO] A falha persiste. Refaçam os cálculos."
+            },
+            {
+                tipo: 'fase3',
+                texto: [
+                    ">>> PROTOCOLO 3: O REDESENHO DO SISTEMA",
+                    "Para destravar as válvulas principais, precisamos de uma solução permanente.",
+                    "A melhor forma de economizar na escola é canalizar a água que desce das pias dos lavatórios",
+                    "e direcioná-la para as descargas dos vasos sanitários, após tratamento simples.",
+                    "\n[ENIGMA]: Desembaralhe o termo técnico que usamos para chamar essa água",
+                    "residual que não contém esgoto sanitário:",
+                    "\nAnagrama: Z A I G S C U S N A A",
+                    "\n[INSIRA O TERMO TÉCNICO (2 palavras)]:"
+                ],
+                validar: (ans) => {
+                    let limpo = ans.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    return limpo === "aguas cinzas" || limpo === "agua cinza";
+                },
+                sucesso: "\n[ACESSO CONCEDIDO] Protocolo de Águas Cinzas reconhecido.",
+                erro: "[ERRO] Solução inválida. O sistema não compreende esse comando."
+            }
+        ];
+
+        async function iniciarFase() {
+            if (faseAtual < fases.length) {
+                await printMulti(fases[faseAtual].texto);
+            } else {
+                await final();
+            }
+        }
+
+        async function final() {
+            outputDiv.innerHTML = "";
+            await typeLento("INICIANDO REINICIALIZAÇÃO DO SISTEMA HIDRÁULICO...", 40);
+            await typeLento("10% ...", 100);
+            await typeLento("50% ...", 100);
+            await typeLento("100% ...", 100);
+            await typeLento("\n[SUCESSO] Válvulas destravadas. Abastecimento de água restaurado!");
+            await typeLento("Parabéns, equipe técnica. Vocês salvaram a escola da seca.");
+            await typeLento("Lembrem-se: a tecnologia ajuda, mas a mudança real está no uso consciente diário.");
+            inputLine.style.display = 'none'; // Desativa input no final
+        }
+
+        userInput.addEventListener('keypress', async function (e) {
+            if (e.key === 'Enter' && !isTyping) {
+                let ans = userInput.value.trim();
+                outputDiv.innerHTML += `\n_> ${ans}\n`; // Mostra o que o usuário digitou
+                
+                let fase = fases[faseAtual];
+                
+                if (fase.validar(ans)) {
+                    if (fase.sucesso) await typeLento(fase.sucesso, 20);
+                    faseAtual++;
+                    setTimeout(iniciarFase, 1500); // Aguarda um pouco antes da próxima fase
+                } else {
+                    let msgErro = typeof fase.erro === 'function' ? fase.erro(ans) : fase.erro;
+                    await typeLento(msgErro, 20);
+                }
+            }
+        });
+
+        // Inicia o jogo ao carregar a página
+        window.onload = iniciarFase;
+    </script>
+</body>
+</html>
